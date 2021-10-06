@@ -14,12 +14,14 @@ int sumOfCPUBurst(Process * process_arr, int pid);
 
 int sumOfIOBurst(Process * process_arr, int pid);
 
+//initialize the Queue
 void InitQueue(Queue *queue){
     queue->front = NULL;
     queue->rear = NULL;
     queue->count = 0;
 }
 
+//return true if the Queue is empty
 bool empty(Queue *queue){
     // printf("empty?\n");
     // printf("%d", queue->count);
@@ -30,6 +32,7 @@ bool empty(Queue *queue){
         return false;
 }
 
+//insert in the Queue at Rear position
 void push(Queue *queue, int data){
     // printf("data *%d inserting\n", data);
     Node *current_idx = (Node *)malloc(sizeof(Node));
@@ -48,6 +51,7 @@ void push(Queue *queue, int data){
     queue->count++;
 }
 
+//pop from the Queue
 void pop(Queue *queue){
     Node *current_Node;
     if (empty(queue)){
@@ -60,10 +64,12 @@ void pop(Queue *queue){
     queue->count--;
 }
 
+//return Front element of the Queue
 int front(Queue *queue){
     return queue->front->data;
 }
 
+//swap between two Struct variable(which is IOHandleInfo)
 void swap_IOhandleInfo(IOhandleInfo *a, IOhandleInfo *b){
     IOhandleInfo tmp;
     tmp.pid = a->pid;
@@ -79,6 +85,7 @@ void swap_IOhandleInfo(IOhandleInfo *a, IOhandleInfo *b){
     b->destQueue = tmp.destQueue;
 }
 
+//insert in the Priority Queue at proper position based on priority
 int push_priority(Priority_Queue *pri_queue, IOhandleInfo node){
 
     if(pri_queue->count > MAX_PROCESS_SIZE){
@@ -102,6 +109,7 @@ int push_priority(Priority_Queue *pri_queue, IOhandleInfo node){
     return 0;
 }
 
+//pop top of the element from the Priority Queue
 void pop_priority(Priority_Queue* pri_queue) {
 	if (pri_queue->count <= 0) 
         return;
@@ -127,10 +135,12 @@ void pop_priority(Priority_Queue* pri_queue) {
 	}
 }
 
+//return TOP element from the Priority Queue
 IOhandleInfo top_priority(Priority_Queue *pri_queue){
     return pri_queue->arr[0];
 }
 
+//return true if the Priority Queue is empty
 bool empty_priority(Priority_Queue *pri_queue){
     if(pri_queue->count == 0)
         return true;
@@ -138,6 +148,7 @@ bool empty_priority(Priority_Queue *pri_queue){
         return false;
 }
 
+//프로세스를 IOHandleQueue에 넣으면서, process_arr에 저장된 해당 차례의 IO Burst 정보를 소모했다고 기록한다.
 void startProcessIO(Process * process_arr, int pid, int currentIdxOfCycle){
     process_arr[pid].IO_BTArr[currentIdxOfCycle] = 0;
     process_arr[pid].currentCycle++;

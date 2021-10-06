@@ -5,8 +5,8 @@
 #include"DataStructures.h"
 #include"Functions.h"
 
+//Process Array printing function for testing 
 void printProcessArr(Process * process_arr, int numOfProcess){
-
     for(int i=1;i<numOfProcess + 1; i++){
         printf("%d %d %d %d\n", process_arr[i].pid, process_arr[i].AT, process_arr[i].queue, process_arr[i].numOfCycle);
         for(int j=0; j<process_arr[i].numOfCycle;j++){
@@ -16,7 +16,7 @@ void printProcessArr(Process * process_arr, int numOfProcess){
         printf("!\n");
     }
 }
-
+//return status code of the process
 int checkProcessInit(Process * process_arr, int pid){
     //return true if the process is started already.
     if(process_arr[pid].status == -1)
@@ -26,7 +26,7 @@ int checkProcessInit(Process * process_arr, int pid){
     else
         return 1;
 }
-
+//return true if All processes are done(=marked as finished), else false.
 bool checkProcessDone(Process * process_arr , int length){
     for(int i=1; i<(length+1); i++){
         if(process_arr[i].status != 1)
@@ -35,12 +35,14 @@ bool checkProcessDone(Process * process_arr , int length){
     return true;
 }
 
+//change the status of Process as "started" and record the start_time
 void markAsStarted(Process * process_arr, int pid, int current_cpu_time){
     process_arr[pid].start_time = current_cpu_time;
     process_arr[pid].status = 0;
     printf("process #%d Initial Start\n", pid);
 }
 
+//change the status of Process as "finished" and record the finish_time
 void markAsFinished(Process * process_arr, int pid, int current_cpu_time){
     process_arr[pid].finish_time = current_cpu_time + 1;
     process_arr[pid].status = 1;
@@ -48,7 +50,7 @@ void markAsFinished(Process * process_arr, int pid, int current_cpu_time){
     process_arr[pid].waiting_time = process_arr[pid].finish_time - process_arr[pid].sumOfIO_BT - process_arr[pid].sumOfCPU_BT;
     printf("process #%d OUT (Finished)\n", pid);
 }
-
+//return Sum of CPU Burst
 int sumOfCPUBurst(Process * process_arr, int pid){
     int length = process_arr[pid].numOfCycle;
     int sum = 0;
@@ -57,7 +59,7 @@ int sumOfCPUBurst(Process * process_arr, int pid){
     }
     return sum;
 }
-
+//return Sum of IO Burst
 int sumOfIOBurst(Process * process_arr, int pid){
     int length = process_arr[pid].numOfCycle;
     int sum = 0;
@@ -135,19 +137,16 @@ int main(int argc, char* argv[]){
             // mfq->q3.push(pid);
 
     }
-    // printProcessArr(process_arr, numOfProcess);
+
     //input reading is over & also all processes are now in the initial Queue of MFQ.
     //now we need to handle the processes to be done.
+    int q1_count=0; //variable for count time quantum of Q1
+    int q2_count=0; //variable for count time quantum of Q2
 
-    int q1_count=0;
-    int q2_count=0;
     printf("Scheduling Start\n");
     printf("-----------------------------------------------------\n");
-    // 1iteration of this loop == 1 cpu cyle(cpu time)
+    // 1 iteration of this loop == 1 cpu cyle(cpu time)
     while(1){
-        // if(cpu_time_count > 500)
-        //     break;
-
         //exit condition
         if(checkProcessDone(process_arr, numOfProcess)){
             break;
@@ -157,11 +156,8 @@ int main(int argc, char* argv[]){
         printf("cpu-time = %-10ld", cpu_time_count);
         printf("|");
         //if there is any process which finished its own IO Burst time, make them get in the MFQ again.
-        // if(!(IOHandleQueue.empty()) && ((IOHandleQueue.top().scheduled_time) <= cpu_time_count)){
         if(!(empty_priority(IOhandleQueue)) && ((top_priority(IOhandleQueue).scheduled_time) <= cpu_time_count)){
-            // int targetPid = IOHandleQueue.top().pid;
             int targetPid = top_priority(IOhandleQueue).pid;
-            // printf("#%d's IO Burst Over, now(%ld) go into the MFQ(%d)\n", targetPid, cpu_time_count, top_priority(IOhandleQueue).destQueue);
             switch (top_priority(IOhandleQueue).destQueue){
             case 0:
                 push(mfq->q0, targetPid);
@@ -180,9 +176,7 @@ int main(int argc, char* argv[]){
         }
         
         if(!(empty(mfq->q0))){
-            // printf("[q0]");
             //time quantum is 1
-
             int targetPid = front(mfq->q0);
             bool flag = false;
             if(checkProcessInit(process_arr, targetPid) == -1){
@@ -195,7 +189,6 @@ int main(int argc, char* argv[]){
             int currentIdxOfCycle = process_arr[targetPid].currentCycle;
             if(process_arr[targetPid].CPU_BTArr[currentIdxOfCycle] > 1){
                 //use all time quantum for CPU Burst and pass the process to q1
-                //printf("-<%d:%d> : %d-\n", targetPid, currentIdxOfCycle, process_arr[targetPid].CPU_BTArr[currentIdxOfCycle]);
                 process_arr[targetPid].CPU_BTArr[currentIdxOfCycle]--;
                 push(mfq->q1, targetPid);
                 pop(mfq->q0);
@@ -206,24 +199,23 @@ int main(int argc, char* argv[]){
                 //if CPU Burst Time is cleared in this turn, take care of rest of CPU Burst time
                 //and put it in IOHandleQueue.
                 process_arr[targetPid].CPU_BTArr[currentIdxOfCycle] = 0;
-                if(process_arr[targetPid].IO_BTArr[currentIdxOfCycle] != 0){
-                    
+                if(process_arr[targetPid].IO_BTArr[currentIdxOfCycle] != 0){ //if curren index of IO Burst is not ZERO (즉, 이번 차례의 IO burst가 0이 아닐때)
+                   //다시 말하면, 이번차례의 IO Burst가 0이 아니어서 Process 중간의 IOburst일 때, 
                     IOhandleInfo tmp = {targetPid, 0, 1 + cpu_time_count + process_arr[targetPid].IO_BTArr[currentIdxOfCycle]};
                     push_priority(IOhandleQueue, tmp);
                     pop(mfq->q0);
-                    //printf("#%d is pushed in to IO Queue. return time is %ld. dest is %d\n", targetPid, (1 + cpu_time_count + (long)process_arr[targetPid].IO_BTArr[currentIdxOfCycle]), tmp.destQueue);
                     startProcessIO(process_arr, targetPid, currentIdxOfCycle);
                 }
-                else{
+                else{ //if this index is the end of process
+                    //즉, 이번 차례의 IO burst가 0이어서, process가 처리해야할 Burst들을 모두 처리한 상황일 때,
                     pop(mfq->q0);
                     markAsFinished(process_arr, targetPid, cpu_time_count);
-                    //printf("#%d is finished. end time is %ld.\n", targetPid, cpu_time_count);
+
                 }
             }
             continue;
         }
         else if(!(empty(mfq->q1))){
-            // printf("[q1]");
             //time quantum is 2
 
             int targetPid = front(mfq->q1);
@@ -240,7 +232,6 @@ int main(int argc, char* argv[]){
             if(q1_count == 1){
                 if(process_arr[targetPid].CPU_BTArr[currentIdxOfCycle] > 1){
                     //use all time quantum for CPU Burst and pass the process to q1
-                    //printf("-<%d:%d> : %d-\n", targetPid, currentIdxOfCycle, process_arr[targetPid].CPU_BTArr[currentIdxOfCycle]);
                     process_arr[targetPid].CPU_BTArr[currentIdxOfCycle]--;
                     pop(mfq->q1);
                     push(mfq->q2, targetPid);
@@ -251,18 +242,17 @@ int main(int argc, char* argv[]){
                     //if CPU Burst Time is cleared in this turn, take care of rest of CPU Burst time
                     //and put it in IOHandleQueue.
                     process_arr[targetPid].CPU_BTArr[currentIdxOfCycle] = 0;
-                    if(process_arr[targetPid].IO_BTArr[currentIdxOfCycle] != 0){
+                    if(process_arr[targetPid].IO_BTArr[currentIdxOfCycle] != 0){//if curren index of IO Burst is not ZERO (즉, 이번 차례의 IO burst가 0이 아닐때)
+                        //다시 말하면, 이번차례의 IO Burst가 0이 아니어서 Process 중간의 IOburst일 때,
                         
                         IOhandleInfo tmp = {targetPid, 0, 1 + cpu_time_count + process_arr[targetPid].IO_BTArr[currentIdxOfCycle]};
                         push_priority(IOhandleQueue, tmp);
-                        //printf("#%d is pushed in to IO Queue. return time is %ld. dest is %d\n", targetPid, (1 + cpu_time_count + (long)process_arr[targetPid].IO_BTArr[currentIdxOfCycle]), tmp.destQueue);
                         pop(mfq->q1);
                         startProcessIO(process_arr, targetPid, currentIdxOfCycle);
                     }
                     else{
                         pop(mfq->q1);
                         markAsFinished(process_arr, targetPid, cpu_time_count);
-                        //printf("#%d is finished. end time is %ld.\n", targetPid, cpu_time_count);
                     }
                 }
                 q1_count = 0;
@@ -272,7 +262,6 @@ int main(int argc, char* argv[]){
 
                 if(process_arr[targetPid].CPU_BTArr[currentIdxOfCycle] > 1){
                     //use all time quantum for CPU Burst and pass the process to q1
-                    //printf("-<%d:%d> : %d-\n", targetPid, currentIdxOfCycle, process_arr[targetPid].CPU_BTArr[currentIdxOfCycle]);
                     process_arr[targetPid].CPU_BTArr[currentIdxOfCycle]--;
                     if(checkProcessInit(process_arr, targetPid) == 0 && flag == false)
                         printf("process #%d\n", targetPid);
@@ -281,18 +270,17 @@ int main(int argc, char* argv[]){
                     //if CPU Burst Time is cleared in this turn, take care of rest of CPU Burst time
                     //and put it in IOHandleQueue.
                     process_arr[targetPid].CPU_BTArr[currentIdxOfCycle] = 0;
-                    if(process_arr[targetPid].IO_BTArr[currentIdxOfCycle] != 0){
+                    if(process_arr[targetPid].IO_BTArr[currentIdxOfCycle] != 0){//if curren index of IO Burst is not ZERO (즉, 이번 차례의 IO burst가 0이 아닐때)
+                        //다시 말하면, 이번차례의 IO Burst가 0이 아니어서 Process 중간의 IOburst일 때,
                         
                         IOhandleInfo tmp = {targetPid, 0, 1 + cpu_time_count + process_arr[targetPid].IO_BTArr[currentIdxOfCycle]};
                         push_priority(IOhandleQueue, tmp);
-                        //printf("#%d is pushed in to IO Queue. return time is %ld. dest is %d\n", targetPid, (1 + cpu_time_count + (long)process_arr[targetPid].IO_BTArr[currentIdxOfCycle]), tmp.destQueue);
                         pop(mfq->q1);;
                         startProcessIO(process_arr, targetPid, currentIdxOfCycle);
                     }
                     else{
                         pop(mfq->q1);
                         markAsFinished(process_arr, targetPid, cpu_time_count);
-                        //printf("#%d is finished. end time is %ld.\n", targetPid, cpu_time_count);
                     }
                     q1_count =0;
                 }
@@ -328,7 +316,8 @@ int main(int argc, char* argv[]){
                     //if CPU Burst Time is cleared in this turn, take care of rest of CPU Burst time
                     //and put it in IOHandleQueue.
                     process_arr[targetPid].CPU_BTArr[currentIdxOfCycle] = 0;
-                    if(process_arr[targetPid].IO_BTArr[currentIdxOfCycle] != 0){
+                    if(process_arr[targetPid].IO_BTArr[currentIdxOfCycle] != 0){//if curren index of IO Burst is not ZERO (즉, 이번 차례의 IO burst가 0이 아닐때)
+                        //다시 말하면, 이번차례의 IO Burst가 0이 아니어서 Process 중간의 IOburst일 때,
                         
                         IOhandleInfo tmp = {targetPid, 1, 1 + cpu_time_count + process_arr[targetPid].IO_BTArr[currentIdxOfCycle]};
                         push_priority(IOhandleQueue, tmp);
@@ -359,6 +348,9 @@ int main(int argc, char* argv[]){
                     //and put it in IOHandleQueue.
                     process_arr[targetPid].CPU_BTArr[currentIdxOfCycle] = 0;
                     if(process_arr[targetPid].IO_BTArr[currentIdxOfCycle] != 0){
+                        //if curren index of IO Burst is not ZERO (즉, 이번 차례의 IO burst가 0이 아닐때)
+                        //다시 말하면, 이번차례의 IO Burst가 0이 아니어서 Process 중간의 IOburst일 때,
+
                         IOhandleInfo tmp = {targetPid, 1, 1 + cpu_time_count + process_arr[targetPid].IO_BTArr[currentIdxOfCycle]};
                         push_priority(IOhandleQueue, tmp);
                         //printf("#%d is pushed in to IO Queue. return time is %ld. dest is %d\n", targetPid, (1 + cpu_time_count + (long)process_arr[targetPid].IO_BTArr[currentIdxOfCycle]), tmp.destQueue);
@@ -403,6 +395,9 @@ int main(int argc, char* argv[]){
                 //and put it in IOHandleQueue.
                 process_arr[targetPid].CPU_BTArr[currentIdxOfCycle] = 0;
                 if(process_arr[targetPid].IO_BTArr[currentIdxOfCycle] != 0){
+                    //if curren index of IO Burst is not ZERO (즉, 이번 차례의 IO burst가 0이 아닐때)
+                   //다시 말하면, 이번차례의 IO Burst가 0이 아니어서 Process 중간의 IOburst일 때,
+                   
                     IOhandleInfo tmp = {targetPid, 2, (1 + cpu_time_count + (long)process_arr[targetPid].IO_BTArr[currentIdxOfCycle])};
                     push_priority(IOhandleQueue, tmp);
                     //printf("#%d is pushed in to IO Queue. return time is %ld. dest is %d\n", targetPid, (1 + cpu_time_count + (long)process_arr[targetPid].IO_BTArr[currentIdxOfCycle]), tmp.destQueue);
@@ -418,12 +413,12 @@ int main(int argc, char* argv[]){
             continue;
         }
         else{
-            printf("currently All processes are IO\n");
+            printf("currently All processes are in IO\n");
         }
     }
 
     for(int i =1; i<numOfProcess+1; i++){
-        printf("Process #%d [TT: %d WT: %d]\n", i , process_arr[i].turnaround_time, process_arr[i].waiting_time);
+        printf("Process #%-3d [TT: %-7d WT: %-7d Start Time: %-7d Finish Time: %-7d]\n", i , process_arr[i].turnaround_time, process_arr[i].waiting_time, process_arr[i].start_time, process_arr[i].finish_time);
         meanOfTT += process_arr[i].turnaround_time;
         meanOfWT += process_arr[i].waiting_time;
     }

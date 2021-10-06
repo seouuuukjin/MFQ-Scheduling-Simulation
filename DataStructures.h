@@ -7,23 +7,27 @@ float meanOfWT = 0;
 
 typedef struct Process{
     int pid;
-    int AT;
-    int queue;
+    int AT; //Arrival Time
+    int queue; //Process's Queue
     int numOfCycle;
     int currentCycle;
-    int *CPU_BTArr;
+
+    int *CPU_BTArr; //Array to save BTs
     int *IO_BTArr;
+
     int sumOfCPU_BT;
     int sumOfIO_BT;
+
     int start_time;
     int finish_time;
+
     int turnaround_time;
     int waiting_time;
     //status = -1(not started yet) , 0(started) , 1(finished)
     int status;
 } Process;
 
-typedef struct Node {
+typedef struct Node { //node of Queue
     int data;
     struct Node *next;
 } Node;
@@ -41,36 +45,15 @@ typedef struct MFQ{
     Queue *q3;
 } MFQ;
 
-// void InitQueue(Queue *queue);
+typedef struct IOhandleInfo{ 
+    //node of Priority Queue
 
-// bool empty(Queue *queue);
-
-// void push(Queue *queue, int data);
-
-// void pop(Queue *queue);
-
-// int front(Queue *queue);
-
-
-typedef struct IOhandleInfo
-{
     int pid;
-    int destQueue;
-    //this is priority
-    long scheduled_time;
+    int destQueue; //destination queue to get in after finishing IO
+    long scheduled_time; //decide priority by this variable
 } IOhandleInfo;
 
 typedef struct Priority_Queue{
     IOhandleInfo arr[MAX_PROCESS_SIZE];
     int count;
 }Priority_Queue;
-
-// void swap_IOhandleInfo(IOhandleInfo *a, IOhandleInfo *b);
-
-// int push_priority(Priority_Queue *pri_queue, IOhandleInfo node);
-
-// void pop_priority(Priority_Queue* pri_queue);
-
-// IOhandleInfo top_priority(Priority_Queue *pri_queue);
-
-// bool empty_priority(Priority_Queue *pri_queue);
